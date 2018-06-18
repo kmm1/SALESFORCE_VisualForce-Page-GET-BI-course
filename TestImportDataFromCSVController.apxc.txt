@@ -1,0 +1,134 @@
+/**
+ * Created by Kate M on 23.05.2018.
+ */
+
+@isTest private class TestImportDataFromCSVController {
+    
+    private static Car_Detail__c  car = new Car_Detail__c (Name__c = 'testDetail');
+
+    @isTest static void testReadFromFile() { //waiting for an Exception
+        Blob csvFileBody = TestUtility.createIncorrectCSVFile();
+        ImportDataFromCSVController cont =
+                new ImportDataFromCSVController(new ApexPages.StandardController(car));
+        cont.csvFileBody = csvFileBody;
+        Test.startTest();
+        cont.readFromFile();
+        Test.stopTest();
+    }
+
+    @isTest static void testSaveData() {
+        Blob csvFileBody = TestUtility.createCSVFile();
+        ImportDataFromCSVController cont =
+                new ImportDataFromCSVController(new ApexPages.StandardController(car));
+        cont.csvFileBody = csvFileBody;
+        cont.readFromFile();
+        List <Car_Detail__c> originalList = new List<Car_Detail__c>();
+        for (Car_Detail__c d : cont.detailList) {
+            originalList.add(d);
+        }
+        Test.startTest();
+        cont.saveData();
+        Test.stopTest();
+        List <Car_Detail__c> savedData = [SELECT id, Type__c,Name__c,CarId__c FROM Car_Detail__c];
+        System.assertEquals(originalList.size(), savedData.size());
+        for (Car_Detail__c d : originalList) {
+            System.assert(savedData.contains(d));
+        }
+    }
+    
+     @isTest static void testSaveDataException() {  //waiting for an Exception (Name__ñ should be unique)
+              Blob csvFileBody = TestUtility.createCSVFile();
+         ImportDataFromCSVController cont =
+                new ImportDataFromCSVController(new ApexPages.StandardController(car));
+       cont.csvFileBody = csvFileBody;
+        cont.readFromFile();
+        List <Car_Detail__c> originalList = new List<Car_Detail__c>();
+        for (Car_Detail__c d : cont.detailList) {
+            originalList.add(d);
+        }
+         cont.detailList.add(new Car_Detail__c ());
+         Test.startTest();
+        cont.saveData();
+        Test.stopTest();
+        
+    }
+
+    @isTest static void testDeleteRecord() {
+        System.currentPageReference().getParameters().put('recordToDelete', '1');
+        Blob csvFileBody = TestUtility.createCSVFile();
+        ImportDataFromCSVController cont =
+                new ImportDataFromCSVController(new ApexPages.StandardController(car));
+        cont.csvFileBody = csvFileBody;
+        cont.readFromFile();
+        List <Car_Detail__c> originalListDetails = new List<Car_Detail__c>();
+        for (Car_Detail__c d : cont.detailList) {
+            originalListDetails.add(d);
+        }
+        Test.startTest();
+        cont.deleteRecord();
+        Test.stopTest();
+        System.assertEquals(originalListDetails.size() - 1, cont.detailList.size());
+    }
+
+    @isTest static void testSelectNumOfRecToShowChanged() {
+        Blob csvFileBody = TestUtility.createCSVFile();
+        ImportDataFromCSVController cont =
+                new ImportDataFromCSVController(new ApexPages.StandardController(car));
+        cont.csvFileBody = csvFileBody;
+        cont.readFromFile();
+        System.equals(cont.numOfRecordsOnPage, 10);
+        Test.startTest();
+        cont.numOfRecordsOnPage = 50;
+        cont.selectNumOfRecToShowChanged();
+        Test.stopTest();
+        System.equals(cont.numOfRecordsOnPage, 50);
+    }
+
+    @isTest static void testDoLast() {
+        Blob csvFileBody = TestUtility.createCSVFile();
+        ImportDataFromCSVController cont =
+                new ImportDataFromCSVController(new ApexPages.StandardController(car));
+        cont.csvFileBody = csvFileBody;
+        Test.startTest();
+        cont.readFromFile();
+        cont.doLast();
+        Test.stopTest();
+    }
+
+    @isTest static void testDoFirst() {
+        Blob csvFileBody = TestUtility.createCSVFile();
+        ImportDataFromCSVController cont =
+                new ImportDataFromCSVController(new ApexPages.StandardController(car));
+        cont.csvFileBody = csvFileBody;
+        Test.startTest();
+        cont.readFromFile();
+        cont.doFirst();
+        Test.stopTest();
+    }
+
+    @isTest static void testDoNext() {
+        Blob csvFileBody = TestUtility.createCSVFile();
+        ImportDataFromCSVController cont =
+                new ImportDataFromCSVController(new ApexPages.StandardController(car));
+        cont.csvFileBody = csvFileBody;
+        cont.numOfRecordsOnPage = 2;
+        cont.currentPage = 1;
+        Test.startTest();
+        cont.readFromFile();
+        cont.doNext();
+        Test.stopTest();
+    }
+
+    @isTest static void testDoPrevious() {
+        Blob csvFileBody = TestUtility.createCSVFile();
+        ImportDataFromCSVController cont =
+                new ImportDataFromCSVController(new ApexPages.StandardController(car));
+        cont.csvFileBody = csvFileBody;
+        cont.currentPage = 2;
+        cont.numOfRecordsOnPage = 2;
+        Test.startTest();
+        cont.readFromFile();
+        cont.doPrevious();
+        Test.stopTest();
+    } 
+}

@@ -1,0 +1,70 @@
+/**
+ * Created by Kate M on 22.05.2018.
+ */
+
+public with sharing virtual Class Pagination {
+    public Integer currentPage { get; set; }
+    public Integer totalPages { get; set; }
+    public Boolean hasNext { get; set; }
+    public Boolean hasPrevious { get; set; }
+    public Integer numOfRecordsOnPage { get; set; }
+    public List <SelectOption> numOfRecSelectOptionsList { get; set; }
+    public Integer listSize { get; set; }
+
+    public Pagination() {
+        system.debug('==>Pagination constructor is calling==>');
+        hasPrevious = FALSE;
+        hasNext = FALSE;
+        currentPage = 1;
+        getNumOfRecordsToShowOnVSPages();
+    }
+
+    public void getNumOfRecordsToShowOnVSPages() {
+        System.debug('==>getNumOfRecordsToShowOnVSPages() method is calling==>');
+        String [] numOfRec = Globals__c.getOrgDefaults().NumOfRecordsToShow__c.split(',');
+        numOfRecSelectOptionsList = new List <SelectOption>();
+        for (String str : numOfRec) {
+            numOfRecSelectOptionsList.add(new SelectOption(str.trim(), str.trim()));
+        }
+        numOfRecordsOnPage = Integer.valueOf(numOfRec.get(0).trim());
+    }
+
+    public virtual void countTotalPages(Integer listSize) {
+        system.debug('==>countTotalPages() method is calling==>');
+        totalPages = Math.ceil((double) listSize / numOfRecordsOnPage).intValue();
+    }
+
+    public virtual void doFirst() {
+        system.debug('==>doFirst() method is calling==>');
+        currentPage = 1;
+    }
+
+    public virtual void doLast() {
+        system.debug('==>doLast() method is calling==>');
+        currentPage = totalPages;
+    }
+
+    public virtual void doNext() {
+        system.debug('==>doNext() method is calling==>');
+        if (getHasNext(listSize)) {
+            currentPage++;
+        }
+    }
+    public virtual Boolean getHasNext(Integer listSize) {
+        System.debug('==>getHasNext() method is calling==>');
+        hasNext = numOfRecordsOnPage * currentPage < listSize ? TRUE : FALSE;
+        return hasNext;
+    }
+
+    public virtual void doPrevious() {
+        system.debug('==>doPrevious() method is calling==>');
+        if (getHasPrevious()) {
+            currentPage--;
+        }
+    }
+    public virtual Boolean getHasPrevious() {
+        system.debug('==>getHasPrevious() method is calling==>');
+        hasPrevious = currentPage != 1 ? TRUE : FALSE;
+        return hasPrevious;
+    }
+}

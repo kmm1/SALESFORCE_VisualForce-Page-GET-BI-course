@@ -1,0 +1,119 @@
+<apex:page standardController="Car_Detail__c" extensions="ImportDataFromCSVController" title="CSV File Uploader"
+           id="ImportDataFromCSV" lightningStylesheets="true" >
+       
+    <style>
+        .controlPanel td {
+            width: 200px;
+        }
+
+        .controlPanel {
+            margin-top: 20px;
+        }
+    </style>
+    
+    <apex:actionStatus id="pageStatus">
+        <apex:facet name="start">
+            <apex:outputPanel >
+                <img src="/img/loading32.gif" width="25" height="25"/>
+                <apex:outputLabel value="Loading..."/>
+            </apex:outputPanel>
+        </apex:facet>
+    </apex:actionStatus>
+
+    <apex:form >
+        <apex:pagemessages />
+        <apex:pageBlock id="controlPanel">
+            <table class="controlPanel fromFile">
+                <tr>
+                    <td colspan="2"><b>Upload a CSV file to save its contents as Details records</b></td>
+                </tr>
+                <tr>
+                    <td>
+                        Upload CSV file
+                    </td>
+                    <td>
+                        <apex:inputFile value="{!csvFileBody}" accept="csv" contentType="text/csv"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        &nbsp;
+                    </td>
+                    <td>
+                        <apex:commandButton value="Upload CSV" action="{!readFromFile}"/>
+                    </td>
+                </tr>
+            </table>
+        </apex:pageBlock>
+    </apex:form>
+
+    <apex:form id="form">
+            <apex:pagemessages />
+        <apex:pageBlock rendered="{!readSuccess}" id="blockWithTable">
+            <apex:actionFunction action="{!selectNumOfRecToShowChanged}" name="selectNumOfRecToShow"
+                                 reRender="blockWithTable" status="pageStatus"/>
+            <!-- select num of items to show -->
+            <apex:outputLabel value="Number of records: " for="selectList" />
+            <apex:selectList id="selectList" size="1" value="{!numOfRecordsOnPage}" onChange="selectNumOfRecToShow();">
+                <apex:selectOptions value="{!numOfRecSelectOptionsList}"/>
+            </apex:selectList>
+            <br/>
+            <br/>
+            <!-- next, previous and page info -->
+            <apex:commandLink action="{!doFirst}" value="First"/>
+            &nbsp;&nbsp;
+            <apex:commandLink action="{!doNext}" rendered="{!hasNext}" value="Next" reRender="blockWithTable"/>
+            <apex:outputLabel rendered="{!NOT(hasNext)}" value="Next"/>
+            &nbsp;&nbsp;
+            <apex:outputLabel value=" (page {!currentPage} of {!totalPages})"/>
+            &nbsp;&nbsp;
+            <apex:commandLink action="{!doPrevious}" rendered="{!hasPrevious}" value="Previous"
+                              reRender="blockWithTable"/>
+            <apex:outputLabel rendered="{!NOT(hasPrevious)}" value="Previous"/>
+            &nbsp;&nbsp;
+            <apex:commandLink action="{!doLast}" value="Last" reRender="blockWithTable"/>
+            <br/>
+            <br/>
+
+            <apex:variable var="i" value="{!indexForIterationOnVF}"/>
+            <apex:pageBlockTable var="det" value="{!listToShow}" id="reRenderThis" style="width:100%">
+
+                <apex:column headerValue="Action">
+                    <apex:commandLink reRender="blockWithTable" action="{!deleteRecord}">{!i} Del
+                        <apex:param name="recordToDelete" value="{!i-1}"/>
+                        <apex:variable var="i" value="{!i+1}"/>
+                    </apex:commandLink>
+                </apex:column>
+
+                <apex:repeat var="f" value="{!fields}">
+                    <apex:column style="width:250px">
+                        <apex:outputField value="{!det[f]}"/>
+                        <apex:facet name="header">{!f}</apex:facet>
+                    </apex:column>
+                </apex:repeat>
+
+                <apex:inlineEditSupport event="ondblclick"/>
+            </apex:pageBlockTable>
+            <br/>
+
+            <!-- next, previous and page info -->
+            <apex:commandLink action="{!doFirst}" reRender="blockWithTable" value="First"/>
+            &nbsp;&nbsp;
+            <apex:commandLink action="{!doNext}" reRender="blockWithTable" rendered="{!hasNext}" value="Next"/>
+            <apex:outputLabel rendered="{!NOT(hasNext)}" value="Next"/>
+            &nbsp;&nbsp;
+            <apex:outputLabel value=" (page {!currentPage} of {!totalPages})"/>
+            &nbsp;&nbsp;
+            <apex:commandLink action="{!doPrevious}" reRender="blockWithTable" rendered="{!hasPrevious}"
+                              value="Previous"/>
+            <apex:outputLabel rendered="{!NOT(hasPrevious)}" value="Previous"/>
+            &nbsp;&nbsp;
+            <apex:commandLink action="{!doLast}" reRender="blockWithTable" value="Last"/>
+            <br/>
+            <br/>
+            <apex:commandButton value="Save to Details" action="{!saveData}" reRender="form"/>
+
+        </apex:pageBlock>
+
+    </apex:form>
+</apex:page>

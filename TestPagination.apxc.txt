@@ -1,0 +1,34 @@
+/**
+ * Created by Kate M on 23.05.2018.
+ */
+
+@isTest private class TestPagination {
+
+    @isTest static void testDoNext() {
+        insert new Globals__c(NumOfRecordsToShow__c = '10,25,50,100,200');
+        Pagination pag = new Pagination();
+        pag.listSize = 100;
+        pag.doNext();
+    }
+
+    @isTest static void testDoPrevious() {
+        insert new Globals__c(NumOfRecordsToShow__c = '10,25,50,100,200');
+        Pagination pag = new Pagination();
+        pag.currentPage=2;
+        pag.hasPrevious = FALSE;
+        pag.doPrevious();
+    }
+
+    @isTest static void testDoFirst() {
+        insert new Globals__c(NumOfRecordsToShow__c = '10,25,50,100,200');
+        Pagination pag = new Pagination();
+        pag.doFirst();
+    }
+
+    @isTest static void testDoLast() {
+        insert new Globals__c(NumOfRecordsToShow__c = '10,25,50,100,200');
+        Pagination pag = new Pagination();
+        pag.doLast();
+    }
+
+}

@@ -1,0 +1,7 @@
+глобальные настройки
+cd shift+tab
+ git config --global user.name "Kate Mihalenok"
+ git config --global user.email km.kathrin3@gmail.com
+git config --list  просмотреть глобальные настройки
+
+git init инициализация репозитория в папке проекта. евидимый фал .git

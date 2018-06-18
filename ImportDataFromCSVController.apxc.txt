@@ -1,0 +1,168 @@
+public with sharing class ImportDataFromCSVController extends Pagination {
+
+    public Blob csvFileBody { get; set; }
+    public List<String> dataLines { get; set; }
+    public List <Car_Detail__c> detailList { get; set; }
+    public List <Car_Detail__c> listToShow { get; set; }
+    public boolean readSuccess { get; set; }
+    public List<String> fields { get; set; }
+    public Integer indexForIterationOnVF { get; set; }
+    public ApexPages.StandardController con;
+
+    public ImportDataFromCSVController(ApexPages.standardController con) {
+        system.debug('==>ImportDataFromCSVController constructor is calling==>');
+        this.con = con;
+        System.debug('controller Id' + this.con.getId());
+        readSuccess = FALSE;
+        hasNext = FALSE;
+        hasPrevious = FALSE;
+        csvFileBody = Blob.valueOf('');
+        detailList = new List <Car_Detail__c>();
+        listToShow = new List <Car_Detail__c>();
+        fields = new List<String>();
+    }
+
+    public override void doNext() {
+        system.debug('==>doNext() method is calling==>');
+        updateList();
+        if (getHasNext(detailList.size())) {
+            currentPage++;
+            showOnPage(numOfRecordsOnPage, currentPage);
+        }
+    }
+
+    public override void doFirst() {
+        system.debug('==>doFirst() method is calling==>');
+        updateList();
+        currentPage = 1;
+        showOnPage(numOfRecordsOnPage, currentPage);
+    }
+
+    public override void doPrevious() {
+        system.debug('==>doPrevious() method is calling==>');
+        updateList();
+        if (getHasPrevious()) {
+            currentPage--;
+            showOnPage(numOfRecordsOnPage, currentPage);
+        }
+    }
+
+    public override void doLast() {
+        system.debug('==>doLast() method is calling==>');
+        updateList();
+        currentPage = totalPages;
+        showOnPage(numOfRecordsOnPage, currentPage);
+    }
+
+    public void updateList() {
+        system.debug('==>updateList() method is calling==>');
+        Integer startIndex = (currentPage - 1) * numOfRecordsOnPage;
+        Integer j = 0;
+        for (Integer i = startIndex; i < listToShow.size(); i++) {
+            detailList.set(i, listToShow.get(j++));
+        }
+    }
+
+    public void showOnPage(Integer numOfRecordsOnPage, Integer currentPage) {
+        system.debug('==>showOnPage() method is calling==>');
+        listToShow.clear();
+        Integer size = detailList.size();
+        Integer startPoint = (currentPage - 1) * numOfRecordsOnPage;
+        Integer recordsNotShown = (detailList.size()) - ((currentPage - 1) * numOfRecordsOnPage);
+        indexForIterationOnVF = startPoint + 1;
+        if (recordsNotShown < numOfRecordsOnPage) {
+            for (Integer i = startPoint; i < detailList.size(); i++) {
+                listToShow.add(detailList.get(i));
+            }
+        } else {
+            for (Integer i = startPoint; listToShow.size() < numOfRecordsOnPage; i++) {
+                listToShow.add(detailList.get(i));
+            }
+        }
+        countTotalPages(detailList.size());
+        getHasNext(detailList.size());
+        getHasPrevious();
+    }
+
+    public void selectNumOfRecToShowChanged() {
+        system.debug('==>selectNumOfRecToShowChanged() method is calling==>');
+        currentPage = System.equals(currentPage, 1) == FALSE ? 1 : currentPage;
+        showOnPage(numOfRecordsOnPage, currentPage);
+    }
+
+    public void readFromFile() {
+        system.debug('==>readFromFile() method is calling==>');
+        detailList.clear();
+        fields.clear();
+        try {
+            read(csvFileBody);
+            showOnPage(numOfRecordsOnPage, currentPage);
+        } catch (Exception e) {
+            ApexPages.addMessage(new ApexPages.message(ApexPages.severity.WARNING, 'There are errors in your file. Please, choose another file'));
+        }
+    }
+
+    public void read(Blob csvFileBody) {
+        system.debug('==>read() method is calling==>');
+        dataLines = csvFileBody.toString().split('\n');
+        List <String> tempList = dataLines[0].split(',');
+        for (String value : tempList) {
+            fields.add(value.trim());
+        }
+        for (Integer i = 1; i < dataLines.size(); i++) {
+            List <String> fieldsInfo = dataLines.get(i).split(',');
+            Car_Detail__c myDetail = new Car_Detail__c();
+            for (Integer j = 0; j < fields.size(); j++) {
+                try {
+                    myDetail.put(fields.get(j).trim(), String.valueOf(fieldsInfo.get(j).trim()));
+                } catch (Exception e) {
+                    try {
+                        myDetail.put(fields.get(j).trim(), Integer.valueOf(fieldsInfo.get(j).trim()));
+                    } catch (Exception ex) {
+                        myDetail.put(fields.get(j).trim(), Decimal.valueOf(fieldsInfo.get(j).trim()));
+                    }
+                }
+            }
+            detailList.add(myDetail);
+            fieldsInfo.clear();
+        }
+        isReadSuccess();
+    }
+
+    public Boolean isReadSuccess() {
+        system.debug('==>isReadSuccess() method is calling==>');
+        readSuccess = !detailList.isEmpty();
+        return readSuccess;
+    }
+
+    public void saveData() {
+        system.debug('==>saveData() method is calling==>');
+        Database.SaveResult [] stList = Database.insert(detailList, false);
+        Boolean saved = TRUE;
+        for (Database.SaveResult sr : stList) {
+            if (! sr.isSuccess()) {
+                saved = FALSE;
+                for (Database.Error err : sr.getErrors()) {
+                    System.debug('The following error has occurred.');
+                    System.debug(err.getStatusCode() + ': ' + err.getMessage());
+                    System.debug('Account fields that affected this error: ' + err.getFields());
+                }
+            } 
+        }
+        if (saved=TRUE) {
+                ApexPages.addMessage(new ApexPages.message(ApexPages.severity.CONFIRM, 'The data was saved successfully'));
+                detailList.clear();
+                readSuccess = FALSE;
+            }
+
+        currentPage = 1;
+    }
+
+    public void deleteRecord() {
+        system.debug('==>deleteRecord() method is calling==>');
+        String idToRemove = System.currentPageReference().getParameters().get('recordToDelete');
+        detailList.remove(Integer.valueOf(idToRemove));
+        isReadSuccess();
+        showOnPage(numOfRecordsOnPage, currentPage);
+    }
+}
